@@ -70,7 +70,7 @@ public class GameManager : MonoBehaviour
     public void GameStart()
     {
         line.SetActive(true);
-        bottom.SetActive(true);
+        // bottom.SetActive(true);
         scoreText.gameObject.SetActive(true);
         maxScoreText.gameObject.SetActive(true);
         startGroup.SetActive(false);
@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
         bgmPlayer.Play();
         SfxPlay(Sfx.Button);
 
-        Invoke("NextDongle", 1.5f);
+        Invoke("NextDongle", 1f);
     }
 
     Dongle MakeDongle()
@@ -92,7 +92,7 @@ public class GameManager : MonoBehaviour
 
         // 使用Instantiate实例化一个新的Dongle对象，并设置其父物体为dongleGroup
         GameObject instantDongleObj = Instantiate(donglePrefab, dongleGroup);
-        instantEffectObj.name = "Dongle " + donglePool.Count;
+        instantDongleObj.name = "Dongle " + donglePool.Count;
         // 从实例化的对象获取Dongle组件
         Dongle instantDongle = instantDongleObj.GetComponent<Dongle>();
         instantDongle.manager = this;
@@ -127,7 +127,7 @@ public class GameManager : MonoBehaviour
         }
 
         lastDongle = GetDongle();
-        lastDongle.level = Random.Range(0, maxLevel - 3);
+        lastDongle.level = Random.Range(0, maxLevel - 2);
 
         // 激活新生成的Dongle对象
         lastDongle.gameObject.SetActive(true);
@@ -271,5 +271,4 @@ public class GameManager : MonoBehaviour
     {
         scoreText.text = score.ToString();
     }
-
 }

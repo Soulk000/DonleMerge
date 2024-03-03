@@ -1,5 +1,4 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Dongle : MonoBehaviour
@@ -11,7 +10,7 @@ public class Dongle : MonoBehaviour
     public ParticleSystem effect;
     public int level;
     public Rigidbody2D rigId;
-    CircleCollider2D circle;
+    PolygonCollider2D circle;
     Animator anim;
     SpriteRenderer spriteRenderer;
 
@@ -22,7 +21,7 @@ public class Dongle : MonoBehaviour
     {
         rigId = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
-        circle = GetComponent<CircleCollider2D>();
+        circle = GetComponent<PolygonCollider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
@@ -45,7 +44,6 @@ public class Dongle : MonoBehaviour
         rigId.velocity = Vector2.zero;
         rigId.angularVelocity = 0;
         circle.enabled = true;
-        gameObject.tag = "Untagged";
     }
 
     // Update is called once per frame
@@ -79,9 +77,7 @@ public class Dongle : MonoBehaviour
             // transform.position 表示当前物体的位置
             // mousePos 表示目标位置
             // 0.1f 是插值的速度，较小的值会导致更平滑的移动，但可能需要更长的时间达到目标位置
-            // transform.position = Vector3.Lerp(transform.position, mousePos, 0.1f);
             transform.position = Vector3.Lerp(transform.position, mousePos, 1f);
-
         }
     }
 
@@ -128,8 +124,8 @@ public class Dongle : MonoBehaviour
             // 获取碰撞对象的Dongle组件
             Dongle other = collision.gameObject.GetComponent<Dongle>();
 
-            // 检查两个Dongle的级别（level）是否相同且未合并，并且级别小于7
-            if (level == other.level && !isMerge && !other.isMerge && level < 7)
+            // 检查两个Dongle的级别（level）是否相同且未合并，并且级别小于8
+            if (level == other.level && !isMerge && !other.isMerge && level < 8)
             {
                 // 比较位置，如果当前Dongle在下方或者位置相同但x坐标更大
                 float meX = transform.position.x;
@@ -176,11 +172,11 @@ public class Dongle : MonoBehaviour
             if (targetPos != Vector3.up * 100)
             {
                 // 使用Vector3.Lerp平滑地移动Dongle到目标位置
-                transform.position = Vector3.Lerp(transform.position, targetPos, 0.5f);
+                transform.position = Vector3.Lerp(transform.position, targetPos, 1f);
             }
             else if (targetPos == Vector3.up * 100)
             {
-                transform.position = Vector3.Lerp(transform.position, Vector3.zero, 0.5f);
+                transform.position = Vector3.Lerp(transform.position, Vector3.zero, 1f);
             }
             yield return null;
         }
@@ -195,31 +191,24 @@ public class Dongle : MonoBehaviour
     void LevelUp()
     {
         isMerge = true;
-
         // 将刚体速度和角速度重置为零
         rigId.velocity = Vector2.zero;
         rigId.angularVelocity = 0;
-
         // 启动协程以处理升级动画
-        StartCoroutine(LevelUpRoutine());
+        LevelUpRoutine();
     }
 
     // 协程：处理Dongle升级动画
-    IEnumerator LevelUpRoutine()
+    void LevelUpRoutine()
     {
-        // 等待0.2秒
-        yield return new WaitForSeconds(0.2f);
-
         // 设置动画中的级别
         anim.SetInteger("Level", level + 1);
-        EffectPlay();
-        manager.SfxPlay(GameManager.Sfx.LevelUp);
-
-        // 等待0.3秒
-        yield return new WaitForSeconds(0.3f);
 
         // 升级级别
         level++;
+
+        EffectPlay();
+        manager.SfxPlay(GameManager.Sfx.LevelUp);
 
         // 更新GameManager中的最大级别
         manager.maxLevel = Mathf.Max(level, manager.maxLevel);
@@ -244,10 +233,10 @@ public class Dongle : MonoBehaviour
             }
 
             // 如果死亡时间大于5秒，调用GameManager中的GameOver方法
-            // if (deadTime > 5)
-            // {
-            //     manager.GameOver();
-            // }
+            if (deadTime > 5)
+            {
+                manager.GameOver();
+            }
         }
     }
 
@@ -264,14 +253,6 @@ public class Dongle : MonoBehaviour
             spriteRenderer.color = Color.white;
         }
     }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.tag == "Finish")
-        {
-            StartCoroutine(MakeTagToDongle());
-        }
-    }
     void EffectPlay()
     {
         // 将特效的位置设置为当前对象的位置
@@ -280,11 +261,5 @@ public class Dongle : MonoBehaviour
         effect.transform.localScale = transform.localScale;
         // 播放特效
         effect.Play();
-    }
-
-    IEnumerator MakeTagToDongle()
-    {
-        yield return new WaitForSeconds(0.2f);
-        gameObject.tag = "Dongle";
     }
 }
