@@ -70,7 +70,7 @@ public class Dongle : MonoBehaviour
             }
 
             // 将z坐标设为0，确保物体在2D平面上移动
-            mousePos.y = 8;
+            mousePos.y = 7;
             mousePos.z = 0;
 
             // 使用Vector3.Lerp平滑地移动物体到鼠标位置
@@ -182,6 +182,7 @@ public class Dongle : MonoBehaviour
         }
 
         manager.score += (int)Mathf.Pow(2, level);
+
         // 重置标志并禁用GameObject
         isMerge = false;
         gameObject.SetActive(false);
@@ -209,7 +210,14 @@ public class Dongle : MonoBehaviour
 
         EffectPlay();
         manager.SfxPlay(GameManager.Sfx.LevelUp);
-
+        if (level >= 7)
+        {
+            if (level == 7) {
+                manager.UpdateGem(1);
+            } else {
+                manager.UpdateGem(2);
+            }
+        }
         // 更新GameManager中的最大级别
         manager.maxLevel = Mathf.Max(level, manager.maxLevel);
 

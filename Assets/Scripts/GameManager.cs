@@ -40,10 +40,12 @@ public class GameManager : MonoBehaviour
     public Text scoreText;
     public Text maxScoreText;
     public Text subScoreText;
+    public Text gumText;
 
     [Header("------------[ ETC ]------------")]
     public GameObject line;
     public GameObject bottom;
+    public Image gemImage;
     int sfxCursor;
 
     // 在游戏开始时设置帧率为120帧
@@ -64,6 +66,7 @@ public class GameManager : MonoBehaviour
         }
 
         maxScoreText.text = PlayerPrefs.GetInt("MaxScore").ToString();
+        gumText.text = PlayerPrefs.GetInt("GemText").ToString();
     }
 
     // 游戏开始时调用，播放背景音乐并生成第一个Dongle对象
@@ -71,8 +74,10 @@ public class GameManager : MonoBehaviour
     {
         line.SetActive(true);
         // bottom.SetActive(true);
+        gemImage.gameObject.SetActive(true);
         scoreText.gameObject.SetActive(true);
         maxScoreText.gameObject.SetActive(true);
+        gumText.gameObject.SetActive(true);
         startGroup.SetActive(false);
 
         bgmPlayer.Play();
@@ -270,5 +275,17 @@ public class GameManager : MonoBehaviour
     private void LateUpdate()
     {
         scoreText.text = score.ToString();
+    }
+
+    public void UpdateGem(int gemCount)
+    {
+        // 获取之前保存的 GemText 值，并加上 gemCount
+        int newGemValue = PlayerPrefs.GetInt("GemText") + gemCount;
+
+        // 将新的值保存到 PlayerPrefs
+        PlayerPrefs.SetInt("GemText", newGemValue);
+
+        // 将新的值赋给 gumText.text
+        gumText.text = newGemValue.ToString();
     }
 }
