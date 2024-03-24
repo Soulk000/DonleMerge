@@ -41,14 +41,22 @@ public class GameManager : MonoBehaviour
     public Text maxScoreText;
     public Text subScoreText;
     public Text gumText;
+    public GameObject hitText;
+    public GameObject buyItemText;
+    public Text bombText;
 
     [Header("------------[ ETC ]------------")]
     public GameObject line;
     public GameObject bottom;
     public Image gemImage;
+    public bool isLive;
+    public int bombCount;
+    public int gemCount;
     int sfxCursor;
 
-    // 在游戏开始时设置帧率为120帧
+    private bool isPaused = false;
+    private int maxScore;
+
     private void Awake()
     {
         Application.targetFrameRate = 120;
@@ -60,20 +68,47 @@ public class GameManager : MonoBehaviour
             MakeDongle();
         }
 
+        LoadSavedData();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        isPaused = pauseStatus;
+
+        if (pauseStatus)
+        {
+            // 游戏暂停时保存数据
+            SaveGameData();
+        }
+    }
+
+    void LoadSavedData()
+    {
         if(!PlayerPrefs.HasKey("MaxScore"))
         {
             PlayerPrefs.SetInt("MaxScore", 0);
         }
+        maxScore = PlayerPrefs.GetInt("MaxScore");
+        maxScoreText.text = maxScore.ToString();
 
-        maxScoreText.text = PlayerPrefs.GetInt("MaxScore").ToString();
+        if(!PlayerPrefs.HasKey("GemText"))
+        {
+            PlayerPrefs.SetInt("GemText", 0);
+        }
+        gemCount = PlayerPrefs.GetInt("GemText");
         gumText.text = PlayerPrefs.GetInt("GemText").ToString();
+
+        if(!PlayerPrefs.HasKey("BombCount"))
+        {
+            PlayerPrefs.SetInt("BombCount", bombCount);
+        }
+        bombCount = PlayerPrefs.GetInt("BombCount");
+        bombText.text = bombCount.ToString();
     }
 
-    // 游戏开始时调用，播放背景音乐并生成第一个Dongle对象
     public void GameStart()
     {
         line.SetActive(true);
-        // bottom.SetActive(true);
         gemImage.gameObject.SetActive(true);
         scoreText.gameObject.SetActive(true);
         maxScoreText.gameObject.SetActive(true);
@@ -88,27 +123,21 @@ public class GameManager : MonoBehaviour
 
     Dongle MakeDongle()
     {
-        // 使用Instantiate实例化一个新的effect对象，并设置其父物体为effectGroup
         GameObject instantEffectObj = Instantiate(effectPrefab, effectGroup);
         instantEffectObj.name = "Effect " + effectPool.Count;
-        // 从实例化的对象获取ParticleSystem组件
         ParticleSystem instantEffect = instantEffectObj.GetComponent<ParticleSystem>();
         effectPool.Add(instantEffect);
 
-        // 使用Instantiate实例化一个新的Dongle对象，并设置其父物体为dongleGroup
         GameObject instantDongleObj = Instantiate(donglePrefab, dongleGroup);
         instantDongleObj.name = "Dongle " + donglePool.Count;
-        // 从实例化的对象获取Dongle组件
         Dongle instantDongle = instantDongleObj.GetComponent<Dongle>();
         instantDongle.manager = this;
-        // 初始化effect
         instantDongle.effect = instantEffect;
         donglePool.Add(instantDongle);
 
-        // 返回实例化的Dongle对象
         return instantDongle;
     }
-    // 生成一个新的Dongle对象
+
     Dongle GetDongle()
     {
         for(int index = 0; index < donglePool.Count; index++)
@@ -123,7 +152,6 @@ public class GameManager : MonoBehaviour
         return MakeDongle();
     }
 
-    // 生成下一个Dongle对象
     void NextDongle()
     {
         if (isOver)
@@ -133,44 +161,35 @@ public class GameManager : MonoBehaviour
 
         lastDongle = GetDongle();
         lastDongle.level = Random.Range(0, maxLevel - 2);
-
-        // 激活新生成的Dongle对象
         lastDongle.gameObject.SetActive(true);
 
-        // 播放下一个Dongle的音效
         SfxPlay(Sfx.Next);
-        // 启动协程等待下一个Dongle生成
         StartCoroutine(WaitNext());
     }
 
-    // 协程：等待上一个Dongle被销毁后生成下一个Dongle
     IEnumerator WaitNext()
     {
-        // 循环等待lastDongle被销毁
         while (lastDongle != null)
         {
             yield return null;
         }
 
-        // 等待2.5秒后生成下一个Dongle
         yield return new WaitForSeconds(1f);
         NextDongle();
     }
 
-    // 当触摸按下时调用，触发当前Dongle的Drag方法
     public void TouchDown()
     {
-        if (lastDongle == null)
+        if (lastDongle == null || isLive == false || isPaused)
         {
             return;
         }
         lastDongle.Drag();
     }
 
-    // 当触摸抬起时调用，触发当前Dongle的Drop方法，并将lastDongle置为null
     public void TouchUp()
     {
-        if (lastDongle == null)
+        if (lastDongle == null || isLive == false || isPaused)
         {
             return;
         }
@@ -178,7 +197,6 @@ public class GameManager : MonoBehaviour
         lastDongle = null;
     }
 
-    // 游戏结束的方法
     public void GameOver()
     {
         if (isOver)
@@ -188,36 +206,28 @@ public class GameManager : MonoBehaviour
 
         isOver = true;
 
-        // 启动协程处理游戏结束逻辑
         StartCoroutine(GameOverRoutine());
     }
 
-    // 协程：处理游戏结束逻辑
     IEnumerator GameOverRoutine()
     {
-        // 获取场景中所有Dongle对象
         Dongle[] dongles = FindObjectsOfType<Dongle>();
 
-        // 停止所有Dongle对象的刚体模拟
         for (int index = 0; index < dongles.Length; index++)
         {
             dongles[index].rigId.simulated = false;
         }
 
-        // 遍历所有Dongle对象
         for (int index = 0; index < dongles.Length; index++)
         {
-            // 将Dongle对象隐藏，并移动到一个很高的位置（上方100个单位）
             dongles[index].Hide(Vector3.up * 100);
 
-            // 等待0.1秒
             yield return new WaitForSeconds(0.1f);
         }
 
-        // 等待0.1秒后播放游戏结束的音效
         yield return new WaitForSeconds(0.1f);
 
-        int maxScore = Mathf.Max(score, PlayerPrefs.GetInt("MaxScore"));
+        maxScore = Mathf.Max(score, maxScore);
         PlayerPrefs.SetInt("MaxScore", maxScore);
         subScoreText.text = "Score: " + scoreText.text;
         endGroup.SetActive(true);
@@ -238,7 +248,6 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene("Main");
     }
 
-    // 播放音效的方法
     public void SfxPlay(Sfx type)
     {
         switch (type)
@@ -260,32 +269,63 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
-        // 播放音效
         sfxPlayer[sfxCursor].Play();
-        // 更新音效游标
         sfxCursor = (sfxCursor + 1) % sfxPlayer.Length;
     }
 
-    private void Update() {
-        if(Input.GetButtonDown("Cancel"))
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.Escape)) // 按下"Esc"键
         {
-            Application.Quit();
+            SaveGameData(); // 保存游戏数据
+            Application.Quit(); // 退出游戏
         }
     }
+
     private void LateUpdate()
     {
         scoreText.text = score.ToString();
     }
 
-    public void UpdateGem(int gemCount)
+    public void UpdateGem(int innerGemCount)
     {
-        // 获取之前保存的 GemText 值，并加上 gemCount
-        int newGemValue = PlayerPrefs.GetInt("GemText") + gemCount;
-
-        // 将新的值保存到 PlayerPrefs
+        int newGemValue = PlayerPrefs.GetInt("GemText") + innerGemCount;
         PlayerPrefs.SetInt("GemText", newGemValue);
-
-        // 将新的值赋给 gumText.text
+        gemCount = newGemValue;
         gumText.text = newGemValue.ToString();
+    }
+
+    public void CheckUseItem(bool checkUseItem)
+    {
+        if (bombCount <= 0)
+        {
+            CheckBuyItem(true);
+            return;
+        }
+        isLive = !checkUseItem;
+        if (checkUseItem == true) {
+            hitText.SetActive(true);
+        } else {
+            isLive = true;
+            hitText.SetActive(false);
+        }
+    }
+
+    public void CheckBuyItem(bool checkBuyItem)
+    {
+        isLive = !checkBuyItem;
+        if (checkBuyItem == true) {
+            buyItemText.SetActive(true);
+        } else {
+            isLive = true;
+            buyItemText.SetActive(false);
+        }
+    }
+
+    private void SaveGameData()
+    {
+        PlayerPrefs.SetInt("MaxScore", maxScore);
+        PlayerPrefs.SetInt("GemText", int.Parse(gumText.text));
+        PlayerPrefs.SetInt("BombCount", bombCount);
     }
 }

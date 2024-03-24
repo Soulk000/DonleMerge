@@ -88,6 +88,10 @@ public class Dongle : MonoBehaviour
 
     public void Drop()
     {
+        if (manager.isLive == false)
+        {
+            return;
+        }
         isDrag = false;
         rigId.simulated = true;
     }
